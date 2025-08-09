@@ -52,7 +52,7 @@ class EarlyCheckpointing:
 
         if improvement >= self.min_delta:
             if self.verbose:
-                self.print_fun(f"{self.monitor} improved from {self.best_score} to {val}.")
+                self.print_fun(f"{self.monitor} improved from {self.best_score:.4f} to {val:.4f}.")
             self.best_score = val
             self.counter = 0
             self._save_checkpoint(val, model, epoch)
@@ -72,7 +72,8 @@ class EarlyCheckpointing:
         return False
 
     def _save_checkpoint(self, val, model, epoch):
-        ckpt_path = os.path.join(self.checkpoint_dir, f"epoch_{epoch}_score_{val:.4f}.ckpt")
+        ckpt_path = os.path.join(self.checkpoint_dir,
+                                 f"{self.experiment_name}_epoch_{epoch}_{self.monitor}_{val:.4f}.h5")
 
         if self.save_weights_only:
             model.save_weights(ckpt_path)
@@ -85,12 +86,12 @@ class EarlyCheckpointing:
         self.best_ckpt = ckpt_path
 
         # Collect and sort existing checkpoints
-        current_checkpoints = glob.glob(f"{self.checkpoint_dir}/*.ckpt")
+        current_checkpoints = glob.glob(f"{self.checkpoint_dir}/*.h5")
         checkpoints_with_scores = []
 
         for ckpt in current_checkpoints:
             try:
-                score_str = ckpt.split("_score_")[-1].replace(".ckpt", "")
+                score_str = ckpt.split(f"_{self.monitor}_")[-1].replace(".h5", "")
                 ckpt_score = float(score_str)
                 ckpt_score = ckpt_score if self.obj == "maximize" else -ckpt_score
                 checkpoints_with_scores.append((ckpt_score, ckpt))

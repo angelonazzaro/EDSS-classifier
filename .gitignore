@@ -8,6 +8,8 @@ dataset/
 dataset-stratified/
 .idea
 .vscode
+wandb
+experiments
 
 # C extensions
 *.so
