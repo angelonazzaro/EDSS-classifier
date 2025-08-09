@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Misc
+dataset/
+dataset-stratified/
+.idea
+.vscode
+
 # C extensions
 *.so
 
