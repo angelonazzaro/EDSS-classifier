@@ -1,0 +1,25 @@
+method: bayes
+metric:
+  name: val_loss
+  goal: minimize
+parameters:
+  lr:
+    distribution: uniform
+    min: 0.00001
+    max: 0.01
+  weight_decay:
+    distribution: uniform
+    min: 0.000001
+    max: 0.001
+  batch_size:
+    values: [32, 64, 128]
+  dropout:
+    distribution: uniform
+    min: 0.0
+    max: 0.5
+  units:
+    values: [64, 128, 256]
+  n_conv_layers:
+    values: [2, 4, 8, 16]
+  n_dense_layers:
+    values: [1, 2, 4]

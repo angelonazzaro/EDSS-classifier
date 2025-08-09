@@ -1,9 +1,11 @@
 import argparse
 import logging
 import os
+from functools import partial
 
 import tensorflow as tf
 import wandb
+import yaml
 from tqdm import tqdm
 
 from edss_dataset import get_dataset
@@ -59,8 +61,12 @@ def run_epoch(model, dataset, criterion, task, epoch, epochs=None, optimizer=Non
     return metrics
 
 
-def main(args):
-    wandb.init(project=args.project, config=dict(vars(args)), name=args.experiment_name)
+def train(args):
+    run = wandb.init(project=args.project, config=dict(vars(args)), name=args.experiment_name)
+
+    # ensure reproducible results
+    tf.config.experimental.enable_op_determinism()
+    tf.random.set_seed(args.seed)
 
     if args.experiment_name is None:
         args.experiment_name = wandb.run.name
@@ -71,7 +77,7 @@ def main(args):
                                 split='train', task=args.task, batch_size=args.batch_size, resize=args.resize)
 
     val_dataset = get_dataset(data_dir=args.data_dir, modality=args.modality,
-                                split='val', task=args.task, batch_size=args.batch_size, resize=args.resize)
+                              split='val', task=args.task, batch_size=args.batch_size, resize=args.resize)
 
     # Early stopping / checkpoint manager
     early_stopping = EarlyCheckpointing(monitor='val_loss', patience=args.patience,
@@ -103,7 +109,7 @@ def main(args):
 
     for epoch in range(1, args.epochs + 1):
         run_epoch(model, train_dataset, loss_fn, args.task, epoch, args.epochs, optimizer,
-                                  training=True)
+                  training=True)
 
         if epoch == 1 or epoch % args.check_val_every_n_epochs == 0:
             val_metrics = run_epoch(model, val_dataset, loss_fn, args.task, epoch, training=False)
@@ -114,6 +120,22 @@ def main(args):
     logger.info(f"Epoch {epoch}/{args.epochs} finished training. \n"
                 f"Best {args.monitor}: {early_stopping.best_score:.4f} - Best checkpoint saved to {early_stopping.best_ckpt}")
 
+    run.finish()
+
+
+def main(args):
+    args.sweep_id = None
+    if args.tune_hyperparameters:
+        with open(args.sweep_config, "r") as f:
+            sweep_config = yaml.load(f, Loader=yaml.FullLoader)
+        sweep_id = wandb.sweep(
+            sweep=sweep_config, project=args.project)
+        sweep_config.update(vars(args))
+        args.sweep_id = sweep_id
+        wandb.agent(sweep_id, partial(train, args), count=args.sweep_count)
+    else:
+        train(args=args)
+
 
 if __name__ == '__main__':
     def parse_tuple(string):
@@ -123,33 +145,51 @@ if __name__ == '__main__':
         except ValueError:
             raise argparse.ArgumentTypeError("Tuple must be numbers separated by commas")
 
+
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--seed', type=int, default=42, help='Seed for random generation')
+
     parser.add_argument('--epochs', type=int, default=10, help='Number of epochs')
-    parser.add_argument('--check_val_every_n_epochs', type=int, default=1, help='Interval between two checkpoint checks')
+    parser.add_argument('--check_val_every_n_epochs', type=int, default=1,
+                        help='Interval between two checkpoint checks')
 
     parser.add_argument('--project', type=str, default='deep-learning', help='Wandb project name')
+    parser.add_argument('--tune_hyperparameters', type=bool, default=False, action=argparse.BooleanOptionalAction,
+                        help='Whether to tune hyperparameters')
+    parser.add_argument("--sweep_config", type=str, default='sweep.yaml', help='YAML file containing the wandb sweep '
+                                                                               'configuration for hyper-parameter '
+                                                                               'search')
+    parser.add_argument("--sweep_count", type=int, default=10, help='Number of tries for the sweep')
 
-    parser.add_argument('--patience', type=int, default=2, help='Patience. Number of epochs without improvement before early stopping')
-    parser.add_argument('--min_delta', type=float, default=0.0001, help='Minimum change in loss to consider as an improvement for early stopping')
-    parser.add_argument('--monitor', type=str, default='val_loss', help='Metric to track for early stopping and model checkpointing')
+    parser.add_argument('--patience', type=int, default=2,
+                        help='Patience. Number of epochs without improvement before early stopping')
+    parser.add_argument('--min_delta', type=float, default=0.0001,
+                        help='Minimum change in loss to consider as an improvement for early stopping')
+    parser.add_argument('--monitor', type=str, default='val_loss',
+                        help='Metric to track for early stopping and model checkpointing')
 
     parser.add_argument('--checkpoint_dir', type=str, default='experiments', help='Directory to save model checkpoints')
     parser.add_argument('--save_top_k', type=int, default=1, help='Maximum number of model checkpoints to save')
-    parser.add_argument('--experiment_name', type=str, default=None, help='Name of the experiment. If None, wandb run name will be used')
-    parser.add_argument('--save_weights_only', type=bool, default=False, action=argparse.BooleanOptionalAction, help='Whether to save weights only')
+    parser.add_argument('--experiment_name', type=str, default=None,
+                        help='Name of the experiment. If None, wandb run name will be used')
+    parser.add_argument('--save_weights_only', type=bool, default=False, action=argparse.BooleanOptionalAction,
+                        help='Whether to save weights only')
 
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5, help='Weight decay')
 
-    parser.add_argument('--data_dir', type=str, help='Data directory')
+    parser.add_argument('--data_dir', required=True, type=str, help='Data directory')
     parser.add_argument('--modality', type=str, choices=['T1', 'T2', 'FLAIR'], default='T1', help='MRI Modality')
-    parser.add_argument('--task', type=str, choices=['binary', 'multi-class'], default='binary', help='Task to train the model onto')
-    parser.add_argument('--resize', type=parse_tuple, help="Tuple of height and width to which resize the images, e.g. 256,256 or (256,256)")
+    parser.add_argument('--task', type=str, choices=['binary', 'multi-class'], default='binary',
+                        help='Task to train the model onto')
+    parser.add_argument('--resize', type=parse_tuple,
+                        help="Tuple of height and width to which resize the images, e.g. 256,256 or (256,256)")
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
 
     parser.add_argument("--model_type", type=str, choices=['CNN', 'ViT'], default='CNN')
-    parser.add_argument("--units", type=int, default=128, help='Number of hidden units of the first dense layer of the CNN model')
+    parser.add_argument("--units", type=int, default=128,
+                        help='Number of hidden units of the first dense layer of the CNN model')
     parser.add_argument("--n_conv_layers", type=int, default=3, help='Number of hidden layers of the CNN model')
     parser.add_argument("--n_dense_layers", type=int, default=2, help='Number of hidden layers of the CNN classifier')
     parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
