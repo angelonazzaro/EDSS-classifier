@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,6 +33,9 @@ def test(args):
     test_dataset = get_dataset(data_dir=args.data_dir, split="test",
                                modality=args.modality, task=args.task,
                                batch_size=args.batch_size, resize=args.resize)
+
+    if isinstance(args.modality, List):
+        args.modality = " ".join(args.modality)
 
     model = tf.keras.models.load_model(args.checkpoint_path,
                                        custom_objects={"CNNModel": CNNModel} if args.model_type == "CNN" else {

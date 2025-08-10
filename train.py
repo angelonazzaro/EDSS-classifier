@@ -89,6 +89,20 @@ def train(args):
                                         save_top_k=args.save_top_k,
                                         verbose=True, print_fun=logger.info)
 
+    if args.tune_hyperparameters:
+        args.dropout = run.config['dropout']
+
+        if args.model_type == "CNN":
+            args.units = run.config['units']
+            args.n_conv_layers = run.config['units']
+            args.n_dense_layers = run.config['n_dense_layers']
+        else:
+            args.d_model = run.config['d_model']
+            args.patch_size = run.config['patch_size']
+            args.num_heads = run.config['num_heads']
+            args.mlp_dim = run.config['mlp_dim']
+            args.n_layers = run.config['n_layers']
+
     if args.model_type == "CNN":
         model = CNNModel(input_shape=(args.resize[0], args.resize[1], 1),
                          units=args.units,
