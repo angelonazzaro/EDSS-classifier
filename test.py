@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from edss_dataset import get_dataset
 from model.cnn import CNNModel
+from model.vit import VisionTransformer
 from utils.constants import CLASS_THRESHOLDS
 
 
@@ -25,7 +26,9 @@ def test(args):
                                modality=args.modality, task=args.task,
                                batch_size=args.batch_size, resize=args.resize)
 
-    model = tf.keras.models.load_model(args.checkpoint_path, custom_objects={"CNNModel": CNNModel})
+    model = tf.keras.models.load_model(args.checkpoint_path,
+                                       custom_objects={"CNNModel": CNNModel} if args.model_type == "CNN" else {
+                                           "VisionTransformer": VisionTransformer})
     write_header = not os.path.exists(csv_path)
 
     labels = list(CLASS_THRESHOLDS[args.task].keys())
@@ -65,7 +68,7 @@ def test(args):
         # Confusion matrix
         disp = ConfusionMatrixDisplay.from_predictions(y_true, y_pred, display_labels=labels, cmap='Blues')
         disp.ax_.set_title(f"Confusion Matrix {args.task} classification\n{args.model_name} - {args.modality}")
-        disp.figure_.savefig(os.path.join(model_results_dir, f"cm_{args.modality}.png")) # noqa
+        disp.figure_.savefig(os.path.join(model_results_dir, f"cm_{args.modality}.png"))  # noqa
         plt.close(disp.figure_)
 
     print(f"Results saved to {csv_path}")

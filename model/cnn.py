@@ -91,7 +91,7 @@ class CNNModel(tf.keras.Model):
         }
 
     @classmethod
-    def from_config(cls, config):
+    def from_config(cls, config, custom_objects=None):
         return cls(**config)
 
 
