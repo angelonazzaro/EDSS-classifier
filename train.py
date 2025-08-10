@@ -202,12 +202,6 @@ if __name__ == '__main__':
     parser.add_argument("--n_dense_layers", type=int, default=2, help='Number of hidden layers of the CNN classifier')
     parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
 
-    parser.add_argument("--units", type=int, default=128,
-                        help='Number of hidden units of the first dense layer of the CNN model')
-    parser.add_argument("--n_conv_layers", type=int, default=3, help='Number of hidden layers of the CNN model')
-    parser.add_argument("--n_dense_layers", type=int, default=2, help='Number of hidden layers of the CNN classifier')
-    parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
-
     parser.add_argument("--patch_size", type=int, default=None, help="Patch dimension for ViT")
     parser.add_argument("--d_model", type=int, default=None, help="Hidden dimension of ViT")
     parser.add_argument("--d_k", type=int, default=None, help="Query and key dimension of ViT")
