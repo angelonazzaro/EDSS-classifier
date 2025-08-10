@@ -15,6 +15,12 @@ from utils.constants import CLASS_THRESHOLDS
 
 
 def test(args):
+
+    # ensure reproducible results
+    tf.keras.utils.set_random_seed(args.seed)
+    tf.random.set_seed(args.seed)
+    tf.config.experimental.enable_op_determinism()
+
     os.makedirs(args.results_dir, exist_ok=True)
     model_results_dir = os.path.join(args.results_dir, args.task)
     model_results_dir = os.path.join(model_results_dir, args.model_name)  # noqa
@@ -102,11 +108,6 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
 
     parser.add_argument("--model_type", type=str, choices=['CNN', 'ViT'], default='CNN')
-    parser.add_argument("--units", type=int, default=128,
-                        help='Number of hidden units of the first dense layer of the CNN model')
-    parser.add_argument("--n_conv_layers", type=int, default=3, help='Number of hidden layers of the CNN model')
-    parser.add_argument("--n_dense_layers", type=int, default=2, help='Number of hidden layers of the CNN classifier')
-    parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
 
     args = parser.parse_args()
 

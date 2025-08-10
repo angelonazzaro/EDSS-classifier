@@ -12,11 +12,11 @@ class MultiHeadSelfAttention(tf.keras.layers.Layer):
         self.d_model = d_model
         self.num_heads = num_heads
 
-        self.W_q = tf.keras.layers.Dense(num_heads * d_k, input_shape=(d_model, ))
-        self.W_k = tf.keras.layers.Dense(num_heads * d_k, input_shape=(d_model, ))
-        self.W_v = tf.keras.layers.Dense(num_heads * d_v, input_shape=(d_model, ))
+        self.W_q = tf.keras.layers.Dense(num_heads * d_k, input_shape=(d_model,))
+        self.W_k = tf.keras.layers.Dense(num_heads * d_k, input_shape=(d_model,))
+        self.W_v = tf.keras.layers.Dense(num_heads * d_v, input_shape=(d_model,))
 
-        self.W_o = tf.keras.layers.Dense(d_model, input_shape=(num_heads * d_k, ))
+        self.W_o = tf.keras.layers.Dense(d_model, input_shape=(num_heads * d_k,))
 
     def split_heads(self, x, depth):
         # x: (batch_size, seq_len, num_heads * depth)
@@ -34,7 +34,7 @@ class MultiHeadSelfAttention(tf.keras.layers.Layer):
         scores = tf.divide(scores, tf.sqrt(tf.cast(self.d_k, tf.float32)))
 
         weights = tf.nn.softmax(scores, axis=-1)
-        outputs = tf.matmul(weights, value) # (batch_size, num_heads, seq_len, d_v)
+        outputs = tf.matmul(weights, value)  # (batch_size, num_heads, seq_len, d_v)
 
         return outputs, weights
 
@@ -42,7 +42,7 @@ class MultiHeadSelfAttention(tf.keras.layers.Layer):
         # x shape: (batch_size, seq_len, d_model)
         batch_size = tf.shape(x)[0]
 
-        q = self.W_q(x) # (batch_size, seq_len, num_heads * d_k)
+        q = self.W_q(x)  # (batch_size, seq_len, num_heads * d_k)
         k = self.W_k(x)
         v = self.W_v(x)
 
@@ -59,7 +59,6 @@ class MultiHeadSelfAttention(tf.keras.layers.Layer):
         output = self.W_o(concat_attention)  # (batch_size, seq_len, d_model)
 
         return output, attention_weights
-
 
     def get_config(self):
         return {
@@ -97,7 +96,7 @@ class TransformerBlock(tf.keras.layers.Layer):
 
     def call(self, x, training: bool = False):
         x_norm = self.layernorm1(x)
-        attn_output, _ = self.mha(x_norm) # noqa
+        attn_output, _ = self.mha(x_norm)  # noqa
         attn_output = self.dropout1(attn_output, training=training)
         out1 = x + attn_output
 
@@ -122,7 +121,7 @@ class VisionTransformer(tf.keras.Model):
     def __init__(self,
                  image_size: int,
                  patch_size: int,
-                 d_model,
+                 d_model: int,
                  d_k: int,
                  d_v: int,
                  mlp_dim: int,
@@ -210,7 +209,7 @@ class VisionTransformer(tf.keras.Model):
         # TODO: check patch extraction, shapes do not match with pos embeddings
         # flatten patches to n_patches * (patch_size**2 * C)
         patches = self.extract_patches(inputs)
-        x = self.patch_proj(patches) # (batch_size, d_model)
+        x = self.patch_proj(patches)  # (batch_size, d_model)
 
         cls_tokens = tf.broadcast_to(self.cls_token, [batch_size, 1, self.d_model])
         x = tf.concat([cls_tokens, x], axis=1)  # (batch_size, num_patches + 1, d_model)
@@ -220,13 +219,12 @@ class VisionTransformer(tf.keras.Model):
         x = self.dropout_layer(x, training=training)
 
         for layer in self.enc_layers:
-            x = layer(x, training=training) # noqa
+            x = layer(x, training=training)  # noqa
 
         cls_output = x[:, 0]  # (batch_size, d_model)
         out = self.mlp_head(cls_output, training=training)
 
         return out
-
 
     def get_config(self):
         return {
@@ -251,7 +249,7 @@ class VisionTransformer(tf.keras.Model):
 
 
 if __name__ == "__main__":
-    model = VisionTransformer(256, 32,768, 512, 512, 3072, 12)
+    model = VisionTransformer(256, 32, 768, 512, 512, 3072, 12)
     model.summary()
 
     x = tf.random.uniform((1, 256, 256, 1))

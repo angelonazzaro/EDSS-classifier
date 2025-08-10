@@ -4,12 +4,13 @@ import os
 from functools import partial
 
 import tensorflow as tf
-import wandb
 import yaml
 from tqdm import tqdm
 
+import wandb
 from edss_dataset import get_dataset
 from model.cnn import CNNModel
+from model.vit import VisionTransformer
 from utils.early_monitoring import EarlyCheckpointing
 
 logger = logging.getLogger(__name__)
@@ -96,7 +97,10 @@ def train(args):
                          n_dense_layers=args.n_dense_layers,
                          dropout=args.dropout)
     else:
-        model = None
+        model = VisionTransformer(image_size=args.resize[0], patch_size=args.patch_size, d_model=args.d_model,
+                                  d_k=args.d_k, d_v=args.d_v, mlp_dim=args.mlp_dim, num_heads=args.num_heads,
+                                  dropout=args.dropout, n_layers=args.n_layers, task=args.task,
+                                  n_classes=1 if args.task == "binary" else 3)
 
     model.summary()
 
@@ -191,11 +195,27 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
 
     parser.add_argument("--model_type", type=str, choices=['CNN', 'ViT'], default='CNN')
+
     parser.add_argument("--units", type=int, default=128,
                         help='Number of hidden units of the first dense layer of the CNN model')
     parser.add_argument("--n_conv_layers", type=int, default=3, help='Number of hidden layers of the CNN model')
     parser.add_argument("--n_dense_layers", type=int, default=2, help='Number of hidden layers of the CNN classifier')
     parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
+
+    parser.add_argument("--units", type=int, default=128,
+                        help='Number of hidden units of the first dense layer of the CNN model')
+    parser.add_argument("--n_conv_layers", type=int, default=3, help='Number of hidden layers of the CNN model')
+    parser.add_argument("--n_dense_layers", type=int, default=2, help='Number of hidden layers of the CNN classifier')
+    parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
+
+    parser.add_argument("--patch_size", type=int, default=None, help="Patch dimension for ViT")
+    parser.add_argument("--d_model", type=int, default=None, help="Hidden dimension of ViT")
+    parser.add_argument("--d_k", type=int, default=None, help="Query and key dimension of ViT")
+    parser.add_argument("--d_v", type=int, default=None, help="Value dimension of ViT")
+    parser.add_argument("--mlp_dim", type=int, default=None, help="MLP units of ViT")
+    parser.add_argument("--num_heads", type=int, default=8, help="Num of attention heads")
+    parser.add_argument("--n_layers", type=int, default=6, help="Num of encoder layers for ViT")
+    parser.add_argument("--channels", type=int, default=1, help="Num of channels for ViT")
 
     args = parser.parse_args()
 
