@@ -11,6 +11,7 @@ from tqdm import tqdm
 from edss_dataset import get_dataset
 from model.cnn import CNNModel
 from model.vit import VisionTransformer
+from utils import parse_tuple
 from utils.constants import CLASS_THRESHOLDS
 
 
@@ -81,14 +82,6 @@ def test(args):
 
 
 if __name__ == '__main__':
-    def parse_tuple(string):
-        try:
-            items = string.strip("()").split(",")
-            return tuple(int(i) for i in items)
-        except ValueError:
-            raise argparse.ArgumentTypeError("Tuple must be numbers separated by commas")
-
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--seed', type=int, default=42, help='Seed for random generation')

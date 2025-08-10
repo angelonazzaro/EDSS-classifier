@@ -11,6 +11,7 @@ import wandb
 from edss_dataset import get_dataset
 from model.cnn import CNNModel
 from model.vit import VisionTransformer
+from utils import parse_tuple
 from utils.early_monitoring import EarlyCheckpointing
 
 logger = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ def train(args):
                          dropout=args.dropout)
     else:
         model = VisionTransformer(image_size=args.resize[0], patch_size=args.patch_size, d_model=args.d_model,
-                                  d_k=args.d_k, d_v=args.d_v, mlp_dim=args.mlp_dim, num_heads=args.num_heads,
+                                  mlp_dim=args.mlp_dim, num_heads=args.num_heads,
                                   dropout=args.dropout, n_layers=args.n_layers, task=args.task,
                                   n_classes=1 if args.task == "binary" else 3)
 
@@ -147,14 +148,6 @@ def main(args):
 
 
 if __name__ == '__main__':
-    def parse_tuple(string):
-        try:
-            items = string.strip("()").split(",")
-            return tuple(int(i) for i in items)
-        except ValueError:
-            raise argparse.ArgumentTypeError("Tuple must be numbers separated by commas")
-
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--seed', type=int, default=42, help='Seed for random generation')
@@ -204,9 +197,7 @@ if __name__ == '__main__':
     parser.add_argument("--dropout", type=float, default=0.3, help='Dropout rate')
 
     parser.add_argument("--patch_size", type=int, default=None, help="Patch dimension for ViT")
-    parser.add_argument("--d_model", type=int, default=None, help="Hidden dimension of ViT")
-    parser.add_argument("--d_k", type=int, default=None, help="Query and key dimension of ViT")
-    parser.add_argument("--d_v", type=int, default=None, help="Value dimension of ViT")
+    parser.add_argument("--d_model", type=int, default=None, help="Hidden dimensionality of ViT")
     parser.add_argument("--mlp_dim", type=int, default=None, help="MLP units of ViT")
     parser.add_argument("--num_heads", type=int, default=8, help="Num of attention heads")
     parser.add_argument("--n_layers", type=int, default=6, help="Num of encoder layers for ViT")
