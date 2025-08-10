@@ -10,6 +10,7 @@ dataset-stratified/
 .vscode
 wandb
 experiments
+results
 
 # C extensions
 *.so

@@ -1,11 +1,11 @@
-from typing import Literal
+from typing import Literal, Tuple
 
 import tensorflow as tf
 
 
 class CNNModel(tf.keras.Model):
     def __init__(self,
-                 input_shape: tuple[int, int, int],
+                 input_shape: Tuple[int, int, int],
                  units: int = 128,
                  n_conv_layers: int = 3,
                  n_dense_layers: int = 2,
@@ -18,11 +18,14 @@ class CNNModel(tf.keras.Model):
         if not (0 <= dropout <= 1):
             raise ValueError("`dropout` must be between 0 and 1")
 
+        self.input_shape = input_shape
         self.task = task
         self.units = units
         self.n_conv_layers = n_conv_layers
         self.n_dense_layers = n_dense_layers
         self.data_format = data_format
+        self.dropout = dropout
+        self.n_classes = n_classes
 
         # Convolutional blocks - Feature Extractor
         self.conv_blocks = []
@@ -45,7 +48,7 @@ class CNNModel(tf.keras.Model):
             units = units // (2 ** i) if i > 0 else units
             dense_block = tf.keras.Sequential([
                 tf.keras.layers.Dense(units, activation="relu"),
-                tf.keras.layers.Dropout(dropout)
+                tf.keras.layers.Dropout(self.dropout)
             ])
             self.dense_blocks.append(dense_block)
 
@@ -55,8 +58,12 @@ class CNNModel(tf.keras.Model):
             activation="sigmoid" if task == "binary" else "softmax"
         )
 
+        if not isinstance(self.input_shape, Tuple):
+            # fix 'TrackedList' conversion when loading from checkpoint
+            self.input_shape = tuple(input_shape)
+
         # Build model with dummy forward pass for summary
-        self(tf.random.uniform((1,) + input_shape))  # noqa
+        self(tf.random.uniform((1,) + self.input_shape))  # noqa
 
     def call(self, inputs, training: bool = False):
         x = inputs
@@ -71,11 +78,31 @@ class CNNModel(tf.keras.Model):
 
         return self.output_layer(x)
 
+    def get_config(self):
+        return {
+            "input_shape": tuple(self.input_shape),
+            "units": self.units,
+            "n_conv_layers": self.n_conv_layers,
+            "n_dense_layers": self.n_dense_layers,
+            "dropout": self.dropout,
+            "data_format": self.data_format,
+            "task": self.task,
+            "n_classes": self.n_classes
+        }
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 if __name__ == "__main__":
     model = CNNModel((256, 256, 1), task="multi-class", n_classes=3,
                      n_conv_layers=4, n_dense_layers=3)
     model.summary()
+    model.save("cnn_test.keras")
 
-    x = tf.random.uniform((1, 256, 256, 1))
-    print(model.predict(x))
+    loaded_model = tf.keras.models.load_model(
+        "cnn_test.keras",
+        custom_objects={"CNNModel": CNNModel}
+    )
+    loaded_model.summary()

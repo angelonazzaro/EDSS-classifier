@@ -64,14 +64,14 @@ def run_epoch(model, dataset, criterion, task, epoch, epochs=None, optimizer=Non
 def train(args):
     run = wandb.init(project=args.project, config=dict(vars(args)), name=args.experiment_name)
 
-    # ensure reproducible results
-    tf.config.experimental.enable_op_determinism()
-    tf.random.set_seed(args.seed)
-
     if args.experiment_name is None:
         args.experiment_name = wandb.run.name
 
     args.checkpoint_dir = os.path.join(args.checkpoint_dir, args.experiment_name)
+    os.makedirs(args.checkpoint_dir, exist_ok=True)
+
+    with open(os.path.join(args.checkpoint_dir, "config.yaml"), "w") as f:
+        yaml.dump(dict(vars(args)), f, default_flow_style=False, sort_keys=False)
 
     train_dataset = get_dataset(data_dir=args.data_dir, modality=args.modality,
                                 split='train', task=args.task, batch_size=args.batch_size, resize=args.resize)
@@ -124,6 +124,11 @@ def train(args):
 
 
 def main(args):
+    # ensure reproducible results
+    tf.keras.utils.set_random_seed(args.seed)
+    tf.random.set_seed(args.seed)
+    tf.config.experimental.enable_op_determinism()
+
     args.sweep_id = None
     if args.tune_hyperparameters:
         with open(args.sweep_config, "r") as f:
@@ -173,8 +178,6 @@ if __name__ == '__main__':
     parser.add_argument('--save_top_k', type=int, default=1, help='Maximum number of model checkpoints to save')
     parser.add_argument('--experiment_name', type=str, default=None,
                         help='Name of the experiment. If None, wandb run name will be used')
-    parser.add_argument('--save_weights_only', type=bool, default=False, action=argparse.BooleanOptionalAction,
-                        help='Whether to save weights only')
 
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5, help='Weight decay')

@@ -12,12 +12,12 @@ class EarlyCheckpointing:
         Monitors model improvement over a metric during training, checkpointing the best versions.
         Halts training if the tracked metric does improve over a specified period.
     """
+
     def __init__(self, monitor, obj: Literal['minimize', 'maximize'] = "minimize",
                  min_delta: float = 0.01, patience: int = 5, verbose: bool = False,
                  checkpoint_dir: Optional[str] = None,
                  experiment_name: Optional[str] = None,
                  save_top_k: int = 1,
-                 save_weights_only: bool = False,
                  print_fun: Optional[Callable] = None):
 
         self.monitor = monitor
@@ -30,12 +30,12 @@ class EarlyCheckpointing:
         self.checkpoint_dir = checkpoint_dir
         self.experiment_name = experiment_name
         self.save_top_k = save_top_k
-        self.save_weights_only = save_weights_only
 
         os.makedirs(checkpoint_dir, exist_ok=True)
 
         if self.verbose and self.print_fun is None:
-            logging.warning("Early stopping is in verbose mode but not `print_fun` is specified. Defaulting to `print` to stdout.")
+            logging.warning(
+                "Early stopping is in verbose mode but not `print_fun` is specified. Defaulting to `print` to stdout.")
             self.print_fun = print
         elif not self.verbose:
             logging.warning("Early stopping is not in verbose mode. `print_fun` is ignored.")
@@ -73,12 +73,10 @@ class EarlyCheckpointing:
 
     def _save_checkpoint(self, val, model, epoch):
         ckpt_path = os.path.join(self.checkpoint_dir,
-                                 f"{self.experiment_name}_epoch_{epoch}_{self.monitor}_{val:.4f}.h5")
+                                 f"{self.experiment_name}_epoch_{epoch}_{self.monitor}_{val:.4f}.keras")
 
-        if self.save_weights_only:
-            model.save_weights(ckpt_path)
-        else:
-            model.save(ckpt_path) # save hyperparameters, architecture and optimizers state
+
+        model.save(ckpt_path)  # save hyperparameters, architecture and optimizers state
 
         if self.verbose:
             self.print_fun(f"Saved checkpoint to: {ckpt_path}")
@@ -86,12 +84,12 @@ class EarlyCheckpointing:
         self.best_ckpt = ckpt_path
 
         # Collect and sort existing checkpoints
-        current_checkpoints = glob.glob(f"{self.checkpoint_dir}/*.h5")
+        current_checkpoints = glob.glob(f"{self.checkpoint_dir}/*.keras")
         checkpoints_with_scores = []
 
         for ckpt in current_checkpoints:
             try:
-                score_str = ckpt.split(f"_{self.monitor}_")[-1].replace(".h5", "")
+                score_str = ckpt.split(f"_{self.monitor}_")[-1].replace(".keras", "")
                 ckpt_score = float(score_str)
                 ckpt_score = ckpt_score if self.obj == "maximize" else -ckpt_score
                 checkpoints_with_scores.append((ckpt_score, ckpt))
