@@ -180,3 +180,8 @@ if __name__ == "__main__":
     x = tf.random.uniform((1, 224, 224, 1))
 
     model.predict(x)
+
+    model.save("vit.keras")
+
+    new_model = tf.keras.models.load_model("vit.keras", custom_objects={"VisionTransformer": VisionTransformer})
+    new_model.summary()

@@ -108,7 +108,11 @@ def train(args):
     if args.task == "binary":
         loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=False)
     else:
-        loss_fn = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
+        loss_fn = tf.keras.losses.CategoricalFocalCrossentropy(
+            alpha=args.alpha,
+            gamma=args.gamma,
+            from_logits=False,
+        )
 
     optimizer = tf.keras.optimizers.AdamW(learning_rate=args.lr, weight_decay=args.weight_decay)
 
@@ -178,6 +182,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5, help='Weight decay')
+
+    parser.add_argument("--alpha", type=float, default=0.5, help='Alpha parameter to control the influence of CrossEntropy of FocalLoss')
+    parser.add_argument("--gamma", type=float, default=2.0, help='Penalization parameter to down weight easy examples')
 
     parser.add_argument('--data_dir', required=True, type=str, help='Data directory')
     parser.add_argument('--modality', type=str, choices=['T1', 'T2', 'FLAIR'], nargs='+', default='T1',
