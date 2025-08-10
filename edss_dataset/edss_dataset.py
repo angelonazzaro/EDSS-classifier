@@ -49,7 +49,7 @@ def preprocess_image(image: Union[np.ndarray, EagerTensor], label: int,
 
 
 def get_dataset(data_dir: str,
-                modality: Literal["T1", "T2", "FLAIR"] = "T1",
+                modality: Union[Literal["T1", "T2", "FLAIR"], List[Literal["T1", "T2", "FLAIR"]]] = "T1",
                 split: Literal["train", "val", "test"] = "train",
                 task: Literal["binary", "multi-class"] = "binary",
                 batch_size: int = 32,
@@ -73,42 +73,45 @@ def get_dataset(data_dir: str,
                 a set of default transformations will be applied.
 
     """
-    dataset_dir = os.path.join(data_dir, modality)
-    dataset_dir = os.path.join(dataset_dir, task)
-    dataset_dir = os.path.join(dataset_dir, split)
-
-    logging.info(f"Loading dataset from {dataset_dir}")
+    if isinstance(modality, str):
+        modality = [modality]
 
     images = []
     labels = []
 
     task_labels = list(CLASS_THRESHOLDS[task].keys())
 
-    for filename in os.listdir(dataset_dir):
-        if not filename.endswith(".png"):
-            continue
+    for mod in modality:
+        dataset_dir = os.path.join(data_dir, mod)
+        dataset_dir = os.path.join(dataset_dir, task)
+        dataset_dir = os.path.join(dataset_dir, split)
 
-        image = tf.io.read_file(os.path.join(dataset_dir, filename))
-        image = tf.io.decode_png(image, channels=1)
+        logging.info(f"Loading dataset from {dataset_dir}")
 
-        if resize is not None:
-            image = tf.image.resize(image, resize)
+        for filename in os.listdir(dataset_dir):
+            if not filename.endswith(".png"):
+                continue
 
-        label = filename.split("_")[-2]
+            image = tf.io.read_file(os.path.join(dataset_dir, filename))
+            image = tf.io.decode_png(image, channels=1)
 
-        try:
-            label = task_labels.index(label)
-        except ValueError:
-            logging.warning(f"Label '{label}' not found in CLASS_THRESHOLDS for task '{task}'. Skipping file.")
-            continue
+            if resize is not None:
+                image = tf.image.resize(image, resize)
 
-        images.append(image)
-        labels.append(label)
+            label = filename.split("_")[-2]
+
+            try:
+                label = task_labels.index(label)
+            except ValueError:
+                logging.warning(f"Label '{label}' not found in CLASS_THRESHOLDS for task '{task}'. Skipping file.")
+                continue
+
+            images.append(image)
+            labels.append(label)
 
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
 
     # TODO: handle augmentation for unbalanced classes
-    # TODO: handle two or more modalities
     dataset = dataset.batch(batch_size).map(
         lambda img, lbl: preprocess_image(img, lbl, normalize=normalize, augment=augment),
         num_parallel_calls=tf.data.AUTOTUNE

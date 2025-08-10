@@ -187,7 +187,8 @@ if __name__ == '__main__':
     parser.add_argument('--weight_decay', type=float, default=1e-5, help='Weight decay')
 
     parser.add_argument('--data_dir', required=True, type=str, help='Data directory')
-    parser.add_argument('--modality', type=str, choices=['T1', 'T2', 'FLAIR'], default='T1', help='MRI Modality')
+    parser.add_argument('--modality', type=str, choices=['T1', 'T2', 'FLAIR'], nargs='+', default='T1',
+                        help='MRI Modality')
     parser.add_argument('--task', type=str, choices=['binary', 'multi-class'], default='binary',
                         help='Task to train the model onto')
     parser.add_argument('--resize', type=parse_tuple,

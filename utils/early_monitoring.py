@@ -75,7 +75,6 @@ class EarlyCheckpointing:
         ckpt_path = os.path.join(self.checkpoint_dir,
                                  f"{self.experiment_name}_epoch_{epoch}_{self.monitor}_{val:.4f}.keras")
 
-
         model.save(ckpt_path)  # save hyperparameters, architecture and optimizers state
 
         if self.verbose:
