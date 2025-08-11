@@ -107,6 +107,10 @@ def get_dataset(data_dir: str,
                 continue
 
             images.append(image)
+
+            if task == "multi-class":
+                label = tf.one_hot(label, depth=len(CLASS_THRESHOLDS[task].keys()))
+
             labels.append(label)
 
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))

@@ -94,7 +94,7 @@ def train(args):
 
         if args.model_type == "CNN":
             args.units = run.config['units']
-            args.n_conv_layers = run.config['units']
+            args.n_conv_layers = run.config['n_conv_layers']
             args.n_dense_layers = run.config['n_dense_layers']
         else:
             args.d_model = run.config['d_model']
