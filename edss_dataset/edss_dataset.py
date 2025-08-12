@@ -13,8 +13,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def preprocess_image(image: Union[np.ndarray, EagerTensor], label: int,
-                     normalize: bool = True, augment: bool = False,
-                     transformations: Optional[List[Callable]] = None):
+                     normalize: bool = True):
     """
         Preprocess image by applying rescaling, normalization and augmentation.
 
@@ -22,7 +21,6 @@ def preprocess_image(image: Union[np.ndarray, EagerTensor], label: int,
             - image: (np.ndarray, EagerTensor): the image to preprocess (expects grayscale image)
             - label: (int): the label of the image
             - normalize: (bool): whether to normalize the image
-            - augment: (bool): whether to augment the image
             - transformations: (Optional[List[Callable]]): the transformations to apply. If None,
                 a set of default transformations will be applied.
     """
@@ -36,15 +34,6 @@ def preprocess_image(image: Union[np.ndarray, EagerTensor], label: int,
             image = tf.cast(image, tf.float32)
             image = tf.divide(image, tf.reduce_max(image))
 
-    if augment:
-        if transformations is None:
-            transformations = [
-                layers.RandomRotation(0.2),
-                layers.RandomFlip("horizontal_and_vertical"),
-            ]
-        aug_pipeline = tf.keras.Sequential(transformations)
-        image = aug_pipeline(image)
-
     return image, label
 
 
@@ -55,7 +44,7 @@ def get_dataset(data_dir: str,
                 batch_size: int = 32,
                 resize: Optional[Tuple[int, int]] = (256, 256),
                 normalize: bool = True,
-                augment: bool = False) -> tf.data.Dataset:
+                include_augmented: bool = False) -> tf.data.Dataset:
     """
         Load and preprocess the dataset.
         The data will be loaded from `data_dir/modality/task/split`.
@@ -68,9 +57,7 @@ def get_dataset(data_dir: str,
             - batch_size: batch size to use for training and preprocessing. Defaults to 32.
             - resize: (Tuple[int, int]): the rescaling factor
             - normalize: (bool): whether to normalize the image
-            - augment: (bool): whether to augment the image
-            - transformations: (Optional[List[Callable]]): the transformations to apply. If None,
-                a set of default transformations will be applied.
+            - include_augmented: (bool): whether to include augmented images
 
     """
     if isinstance(modality, str):
@@ -82,14 +69,16 @@ def get_dataset(data_dir: str,
     task_labels = list(CLASS_THRESHOLDS[task].keys())
 
     for mod in modality:
-        dataset_dir = os.path.join(data_dir, mod)
-        dataset_dir = os.path.join(dataset_dir, task)
-        dataset_dir = os.path.join(dataset_dir, split)
+        dataset_dir = os.path.join(data_dir, mod, task, split)
 
         logging.info(f"Loading dataset from {dataset_dir}")
 
         for filename in os.listdir(dataset_dir):
             if not filename.endswith(".png"):
+                continue
+
+            # skip augmented files if no augmentation
+            if not include_augmented and "aug" in filename:
                 continue
 
             image = tf.io.read_file(os.path.join(dataset_dir, filename))
@@ -115,9 +104,8 @@ def get_dataset(data_dir: str,
 
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
 
-    # TODO: handle augmentation for unbalanced classes
     dataset = dataset.batch(batch_size).map(
-        lambda img, lbl: preprocess_image(img, lbl, normalize=normalize, augment=augment),
+        lambda img, lbl: preprocess_image(img, lbl, normalize=normalize),
         num_parallel_calls=tf.data.AUTOTUNE
     )
 

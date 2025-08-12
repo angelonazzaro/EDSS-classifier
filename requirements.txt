@@ -1,6 +1,8 @@
 tensorflow==2.19.0
+tf-models-official==2.19.1
 tensorflow-datasets==4.9.9
 apache-beam==2.66.0
+protobuf==5.29.5
 mlcroissant==1.0.21
 matplotlib==3.10.5
 jupyter==1.1.1

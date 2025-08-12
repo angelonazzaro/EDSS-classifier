@@ -17,15 +17,13 @@ from utils.constants import CLASS_THRESHOLDS
 
 
 def test(args):
-
     # ensure reproducible results
     tf.keras.utils.set_random_seed(args.seed)
     tf.random.set_seed(args.seed)
     tf.config.experimental.enable_op_determinism()
 
     os.makedirs(args.results_dir, exist_ok=True)
-    model_results_dir = os.path.join(args.results_dir, args.task)
-    model_results_dir = os.path.join(model_results_dir, args.model_name)  # noqa
+    model_results_dir = os.path.join(args.results_dir, args.task, args.model_name)
     os.makedirs(model_results_dir, exist_ok=True)
 
     csv_path = os.path.join(args.results_dir, f"{args.task}_results.csv")
@@ -54,7 +52,6 @@ def test(args):
         y_true = []
         y_pred = []
 
-        # Run inference
         for x_batch, y_batch in tqdm(test_dataset, desc="Testing", total=len(test_dataset)):
             preds = model.predict(x_batch)
             if preds.shape[1] == 1:
@@ -70,13 +67,12 @@ def test(args):
         y_pred = np.array(y_pred)
 
         accuracy = accuracy_score(y_true, y_pred)
-        precision = precision_score(y_true, y_pred, average="weighted", zero_division=0)
-        recall = recall_score(y_true, y_pred, average="weighted", zero_division=0)
-        f1 = f1_score(y_true, y_pred, average="weighted", zero_division=0)
+        precision = precision_score(y_true, y_pred, average=None if args.task == "binary" else "micro", zero_division=0)
+        recall = recall_score(y_true, y_pred, average=None if args.task == "binary" else "micro", zero_division=0)
+        f1 = f1_score(y_true, y_pred, average=None if args.task == "binary" else "micro", zero_division=0)
 
         writer.writerow([args.model_name, args.modality, accuracy, precision, recall, f1])
 
-        # Confusion matrix
         disp = ConfusionMatrixDisplay.from_predictions(y_true, y_pred, display_labels=labels, cmap='Blues')
         disp.ax_.set_title(f"Confusion Matrix {args.task} classification\n{args.model_name} - {args.modality}")
         disp.figure_.savefig(os.path.join(model_results_dir, f"cm_{args.modality}.png"))  # noqa

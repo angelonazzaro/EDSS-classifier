@@ -76,10 +76,13 @@ def train(args):
         yaml.dump(dict(vars(args)), f, default_flow_style=False, sort_keys=False)
 
     train_dataset = get_dataset(data_dir=args.data_dir, modality=args.modality,
-                                split='train', task=args.task, batch_size=args.batch_size, resize=args.resize)
+                                split='train', task=args.task, batch_size=args.batch_size, resize=args.resize,
+                                include_augmented=args.include_augmented)
 
     val_dataset = get_dataset(data_dir=args.data_dir, modality=args.modality,
-                              split='val', task=args.task, batch_size=args.batch_size, resize=args.resize)
+                              split='val', task=args.task, batch_size=args.batch_size,
+                              resize=args.resize,
+                              include_augmented=args.include_augmented)
 
     # Early stopping / checkpoint manager
     early_stopping = EarlyCheckpointing(monitor='val_loss', patience=args.patience,
@@ -208,6 +211,8 @@ if __name__ == '__main__':
     parser.add_argument('--resize', type=parse_tuple,
                         help="Tuple of height and width to which resize the images, e.g. 256,256 or (256,256)")
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--include_augmented', type=bool, default=False, action=argparse.BooleanOptionalAction,
+                        help='Whether to include augmented images')
 
     parser.add_argument("--model_type", type=str, choices=['CNN', 'ViT'], default='CNN')
 
