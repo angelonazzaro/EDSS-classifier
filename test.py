@@ -54,7 +54,7 @@ def test(args):
 
         for x_batch, y_batch in tqdm(test_dataset, desc="Testing", total=len(test_dataset)):
             preds = model.predict(x_batch)
-            if preds.shape[1] == 1:
+            if args.task == "binary":
                 preds_class = (preds > 0.5).astype(int)
                 y_true.extend(y_batch.numpy().astype(int))
                 y_pred.extend(preds_class)
