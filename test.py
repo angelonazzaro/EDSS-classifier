@@ -89,8 +89,6 @@ if __name__ == '__main__':
     parser.add_argument('--results_dir', type=str, default='results', help='Directory to save model results')
     parser.add_argument('--model_name', type=str, required=True, help='Name of the model.')
     parser.add_argument('--checkpoint_path', type=str, required=True, help='Path of the model checkpoint to test.')
-    parser.add_argument('--weights_only', type=bool, default=False, action=argparse.BooleanOptionalAction,
-                        help='Whether to load weights only')
 
     parser.add_argument('--data_dir', required=True, type=str, help='Data directory')
     parser.add_argument('--modality', type=str, choices=['T1', 'T2', 'FLAIR'], nargs='+', default='T1', help='MRI Modality')
