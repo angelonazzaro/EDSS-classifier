@@ -68,7 +68,7 @@ class CNNModel(tf.keras.Model):
     def call(self, inputs, training: bool = False):
         x = inputs
 
-        for i, block in enumerate(self.conv_blocks):
+        for block in self.conv_blocks:
             x = block(x, training=training)
 
         x = self.flatten(x)

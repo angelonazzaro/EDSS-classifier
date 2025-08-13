@@ -29,21 +29,22 @@ def run_epoch(model, dataset, criterion, task, epoch, epochs=None, optimizer=Non
     for x_batch, y_batch in tqdm(dataset, desc=desc):
         if training:
             with tf.GradientTape() as tape:
-                logits = model(x_batch, training=True)
-                loss_value = criterion(y_batch, logits)
+                y_pred = model(x_batch, training=True)
+                loss_value = criterion(y_batch, y_pred)
             grads = tape.gradient(loss_value, model.trainable_variables)
             optimizer.apply_gradients(zip(grads, model.trainable_variables))
         else:
-            logits = model(x_batch, training=False)
-            loss_value = criterion(y_batch, logits)
+            y_pred = model(x_batch, training=False)
+            loss_value = criterion(y_batch, y_pred)
 
         loss_metric.update_state(loss_value)
-        acc_metric.update_state(y_batch, logits)
-        precision_metric.update_state(y_batch, logits)
-        recall_metric.update_state(y_batch, logits)
+        acc_metric.update_state(y_batch, y_pred)
+        precision_metric.update_state(y_batch, y_pred)
+        recall_metric.update_state(y_batch, y_pred)
 
     precision = precision_metric.result().numpy()
     recall = recall_metric.result().numpy()
+
     if (precision + recall) == 0:
         f1 = 0
     else:
@@ -200,7 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=1e-3, help='Learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5, help='Weight decay')
 
-    parser.add_argument("--alpha", type=float, default=0.5, help='Alpha parameter to control the influence of CrossEntropy of FocalLoss')
+    parser.add_argument("--alpha", type=float, default=0.25, help='Alpha parameter to control the influence of CrossEntropy of FocalLoss')
     parser.add_argument("--gamma", type=float, default=2.0, help='Penalization parameter to down weight easy examples')
 
     parser.add_argument('--data_dir', required=True, type=str, help='Data directory')
