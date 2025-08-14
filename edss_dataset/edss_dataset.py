@@ -32,10 +32,10 @@ def preprocess_image(
 
     if normalize:
         if isinstance(image, np.ndarray):
-            image = tf.cast(image, tf.float32) / np.max(image)
+            image = tf.cast(image, tf.float32) / 255
         else:
             image = tf.cast(image, tf.float32)
-            image = tf.divide(image, tf.reduce_max(image))
+            image = tf.divide(image, 255)
 
     return image, label
 

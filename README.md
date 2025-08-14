@@ -19,7 +19,7 @@ In the remainder of this work, we will analyze the classification of patients' d
 
 To address this task, we will develop and compare two types of
 models: one based on Convolutional Neural Networks (CNN) and one on Vision
-Transformer (ViT)}. Since we have
+Transformer (ViT). Since we have
 a limited dataset and the intended use is clinical, we will focus on
 "lightweight" models that can be deployed in environments with
 limited computational resources. Furthermore, the use of complex models
