@@ -1,10 +1,9 @@
 import logging
 import os
-from typing import Optional, List, Callable, Tuple, Literal, Union
+from typing import Optional, List, Tuple, Literal, Union
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras import layers
 from tensorflow.python.framework.ops import EagerTensor
 
 from utils.constants import CLASS_THRESHOLDS
